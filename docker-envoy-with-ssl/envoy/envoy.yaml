@@ -1,7 +1,7 @@
 # ===================================================================
 # Envoy Configuration: SSL Proxy for Grafana
-# - Listens on port 80, redirects to HTTPS, and serves Certbot challenges.
-# - Listens on port 443, terminates TLS, and forwards to Grafana.
+# - Port 80: Redirects all traffic to HTTPS
+# - Port 443: Terminates TLS and forwards to Grafana
 # ===================================================================
 
 admin:
@@ -13,7 +13,7 @@ admin:
 
 static_resources:
   listeners:
-    # --- HTTP Listener (Port 80) ---
+    # --- HTTP Listener (Port 80) - Redirect to HTTPS ---
     - name: listener_http
       address:
         socket_address:
@@ -31,16 +31,7 @@ static_resources:
                     - name: http_vhost
                       domains: ["*"]
                       routes:
-                        # Route 1: Serve Let's Encrypt challenge files
-                        - match:
-                            path: "/.well-known/acme-challenge/*"
-                          direct_response:
-                            status: 200
-                            body:
-                              # The actual file content is served by the volume mount.
-                              # This is just a placeholder response.
-                              inline_string: "ACME Challenge"
-                        # Route 2: Redirect all other traffic to HTTPS
+                        # Redirect all HTTP traffic to HTTPS
                         - match:
                             prefix: "/"
                           redirect:
@@ -50,7 +41,7 @@ static_resources:
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 
-    # --- HTTPS Listener (Port 443) ---
+    # --- HTTPS Listener (Port 443) - TLS Termination ---
     - name: listener_https
       address:
         socket_address:
@@ -88,7 +79,7 @@ static_resources:
                       filename: "/etc/letsencrypt/live/grafana.stg.cloudterms.net/privkey.pem"
 
   clusters:
-    # Cluster for the Grafana service (running in another Docker container)
+    # Grafana backend service
     - name: grafana_cluster
       type: STRICT_DNS
       load_assignment:
@@ -98,6 +89,5 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      # 'grafana' is the service name from docker-compose.yml
                       address: grafana
                       port_value: 3000

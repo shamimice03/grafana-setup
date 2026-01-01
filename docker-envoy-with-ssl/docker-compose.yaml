@@ -1,7 +1,7 @@
 services:
-  # Your Grafana service (no changes here)
+  # Grafana service
   grafana:
-    image: grafana/grafana
+    image: grafana/grafana:latest
     container_name: grafana
     restart: unless-stopped
     environment:
@@ -12,17 +12,17 @@ services:
     networks:
       - proxy-network
 
-  # The Envoy reverse proxy (updated volumes)
+  # Envoy reverse proxy with SSL termination
   envoy:
     image: envoyproxy/envoy:v1.28-latest
-    container_name: my_envoy
+    container_name: envoy_proxy
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
+      - "9901:9901" # Envoy admin interface (optional)
     volumes:
       - ./envoy/envoy.yaml:/etc/envoy/envoy.yaml:ro
-      # --- UPDATED VOLUMES ---
-      # Mount the standard host directories for Let's Encrypt
       - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - grafana
