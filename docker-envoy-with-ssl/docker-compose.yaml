@@ -20,7 +20,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "9901:9901" # Envoy admin interface (optional)
+      # - "9901:9901" # Envoy admin interface (optional)
     volumes:
       - ./envoy/envoy.yaml:/etc/envoy/envoy.yaml:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
