@@ -1,5 +1,7 @@
 # ===================================================================
-# Envoy Configuration with SSL/TLS (Corrected)
+# Envoy Configuration: SSL Proxy for Grafana
+# - Listens on port 80, redirects to HTTPS, and serves Certbot challenges.
+# - Listens on port 443, terminates TLS, and forwards to Grafana.
 # ===================================================================
 
 admin:
@@ -11,8 +13,8 @@ admin:
 
 static_resources:
   listeners:
-    # --- Listener for HTTP (Port 80) ---
-    - name: listener_80
+    # --- HTTP Listener (Port 80) ---
+    - name: listener_http
       address:
         socket_address:
           address: 0.0.0.0
@@ -24,30 +26,32 @@ static_resources:
                 "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                 stat_prefix: ingress_http
                 route_config:
-                  name: local_route
+                  name: http_route_config
                   virtual_hosts:
-                    - name: local_service
+                    - name: http_vhost
                       domains: ["*"]
                       routes:
-                        # Route for Let's Encrypt ACME challenge
+                        # Route 1: Serve Let's Encrypt challenge files
                         - match:
                             path: "/.well-known/acme-challenge/*"
                           direct_response:
                             status: 200
                             body:
-                              inline_string: "Not Found" # The volume mount serves the actual file.
-                        # Redirect all other HTTP traffic to HTTPS
+                              # The actual file content is served by the volume mount.
+                              # This is just a placeholder response.
+                              inline_string: "ACME Challenge"
+                        # Route 2: Redirect all other traffic to HTTPS
                         - match:
                             prefix: "/"
                           redirect:
-                            https_redirect: true # FIXED: Removed deprecated options
+                            https_redirect: true
                 http_filters:
                   - name: envoy.filters.http.router
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 
-    # --- Listener for HTTPS (Port 443) ---
-    - name: listener_443
+    # --- HTTPS Listener (Port 443) ---
+    - name: listener_https
       address:
         socket_address:
           address: 0.0.0.0
@@ -59,7 +63,7 @@ static_resources:
                 "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                 stat_prefix: ingress_https
                 route_config:
-                  name: local_route
+                  name: https_route_config
                   virtual_hosts:
                     - name: grafana_vhost
                       domains: ["grafana.stg.cloudterms.net"]
@@ -67,18 +71,16 @@ static_resources:
                         - match:
                             prefix: "/"
                           route:
-                            cluster: grafana_service
+                            cluster: grafana_cluster
                 http_filters:
                   - name: envoy.filters.http.router
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-          # TLS Configuration
           transport_socket:
             name: envoy.transport_sockets.tls
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
               common_tls_context:
-                alpn_protocols: "h2,http/1.1"
                 tls_certificates:
                   - certificate_chain:
                       filename: "/etc/letsencrypt/live/grafana.stg.cloudterms.net/fullchain.pem"
@@ -86,15 +88,16 @@ static_resources:
                       filename: "/etc/letsencrypt/live/grafana.stg.cloudterms.net/privkey.pem"
 
   clusters:
-    # Cluster for the main Grafana service
-    - name: grafana_service
+    # Cluster for the Grafana service (running in another Docker container)
+    - name: grafana_cluster
       type: STRICT_DNS
       load_assignment:
-        cluster_name: grafana_service
+        cluster_name: grafana_cluster
         endpoints:
           - lb_endpoints:
               - endpoint:
                   address:
                     socket_address:
+                      # 'grafana' is the service name from docker-compose.yml
                       address: grafana
                       port_value: 3000
