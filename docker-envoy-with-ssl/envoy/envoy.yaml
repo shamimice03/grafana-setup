@@ -57,7 +57,7 @@ static_resources:
                   name: https_route_config
                   virtual_hosts:
                     - name: grafana_vhost
-                      domains: ["${DOMAIN}"]
+                      domains: ["$DOMAIN_NAME"]
                       routes:
                         - match:
                             prefix: "/"
@@ -74,9 +74,9 @@ static_resources:
               common_tls_context:
                 tls_certificates:
                   - certificate_chain:
-                      filename: "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem"
+                      filename: "/etc/letsencrypt/live/$DOMAIN_NAME/fullchain.pem"
                     private_key:
-                      filename: "/etc/letsencrypt/live/${DOMAIN}/privkey.pem"
+                      filename: "/etc/letsencrypt/live/$DOMAIN_NAME/privkey.pem"
 
   clusters:
     # Grafana backend service

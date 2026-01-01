@@ -2,13 +2,10 @@
 
 set -e
 
-set -a
 # Configuration
 DOMAIN="grafana-oss.stg.cloudterms.net"
 EMAIL="mrseeker420@gmail.com"
 DEPLOY_DIR="/var/lib/grafana-proxy"
-set +a  # Stop automatic export
-
 
 # Install docker and compose
 sudo dnf install -y docker
@@ -67,8 +64,7 @@ fi
 
 # Generate envoy.yaml
 echo "Configuring Envoy for domain: $DOMAIN"
-sudo sed -i.bak "s|\${DOMAIN}|$DOMAIN|g" ./envoy/envoy.yaml
-sudo rm -f ./envoy/envoy.yaml.bak
+sudo cat ./envoy/envoy.yaml | sed "s|\$DOMAIN_NAME|$DOMAIN|g" > ./envoy/envoy.yaml
 
 # Fix certificate permissions
 echo "Setting certificate permissions..."
