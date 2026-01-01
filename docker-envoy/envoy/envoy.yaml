@@ -1,43 +1,73 @@
+# ===================================================================
+# Envoy Configuration File
+#
+# Purpose: Act as a reverse proxy.
+# - Listens for incoming HTTP traffic on port 80.
+# - Forwards all traffic to a Grafana service running on port 3000.
+# ===================================================================
+
+# --- Admin Interface Configuration ---
+# This provides a local-only admin interface for viewing stats, config, etc.
+# It's not exposed to the public internet.
 admin:
   access_log_path: /tmp/admin_access.log
   address:
     socket_address:
-      address: 0.0.0.0
-      port_value: 9901
+      address: 127.0.0.1 # Listen only on localhost for security
+      port_value: 9901 # Default admin port
 
+# --- Static Resources Configuration ---
+# This section defines all of Envoy's listeners, clusters, routes, etc.
 static_resources:
+  # --- Listeners ---
+  # Listeners are the network entry points for Envoy. They listen on a port
+  # and apply a series of filters to incoming connections.
   listeners:
     - name: listener_80
       address:
         socket_address:
-          address: 0.0.0.0
-          port_value: 80
+          address: 0.0.0.0 # Listen on all available network interfaces
+          port_value: 80 # The public-facing port
+
+      # A filter chain defines the sequence of filters applied to a connection.
       filter_chains:
         - filters:
+            # The HTTP Connection Manager is the core filter for handling HTTP traffic.
             - name: envoy.filters.network.http_connection_manager
               typed_config:
+                # The type URL tells Envoy what kind of configuration to expect.
                 "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                 stat_prefix: ingress_http
+
+                # --- Routing Configuration ---
+                # This tells the connection manager how to route HTTP requests.
                 route_config:
                   name: local_route
                   virtual_hosts:
-                    - name: local_service
+                    - name: grafana_vhost
+                      # This virtual host will match any domain name.
                       domains: ["*"]
                       routes:
                         - match:
-                            prefix: "/"
+                            prefix: "/" # Match all incoming request paths.
                           route:
-                            # This cluster name must match the one below
+                            # Send matching traffic to the 'grafana_service' cluster.
                             cluster: grafana_service
+
+                # --- HTTP Filters ---
+                # These are applied to the HTTP request/response stream *after* routing.
                 http_filters:
                   - name: envoy.filters.http.router
+                    # This filter is responsible for actually forwarding the request
+                    # to the upstream cluster selected by the routing configuration.
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 
+  # --- Clusters ---
+  # Clusters define a group of upstream hosts that Envoy can proxy traffic to.
   clusters:
-    # This cluster must be named 'grafana_service'
-    - name: grafana_service
-      type: STRICT_DNS
+    - name: grafana_service # This name must match the name used in the route_config.
+      type: STRICT_DNS # Re-resolve the DNS name periodically. Good for Docker.
       load_assignment:
         cluster_name: grafana_service
         endpoints:
@@ -45,7 +75,8 @@ static_resources:
               - endpoint:
                   address:
                     socket_address:
-                      # This is the Docker service name from docker-compose.yml
+                      # 'grafana' is the service name from docker-compose.yml.
+                      # Docker's internal DNS resolves this to the container's IP.
                       address: grafana
-                      # This is the port Grafana listens on inside the container
+                      # The port Grafana listens on inside its container.
                       port_value: 3000
