@@ -27,8 +27,12 @@ if [ ! -L /usr/bin/docker-compose ]; then
   sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
 fi
 
-# Install certbot
-sudo dnf install -y certbot
+# Install certbot and cronie
+sudo dnf install -y certbot cronie
+
+# Start and enable cronie service
+sudo systemctl start crond
+sudo systemctl enable crond
 
 # Request for certificate
 sudo certbot certonly --standalone \
@@ -90,6 +94,10 @@ sudo chmod 644 /etc/letsencrypt/archive/$DOMAIN/cert1.pem
 # Start services
 echo "Starting Docker containers..."
 sudo ADMIN_PASSWORD="$ADMIN_PASSWORD" docker-compose up -d
+
+# Cron job for automatic certificate renewal
+echo "Setting up certificate renewal cron job..."
+(crontab -l 2>/dev/null; echo "0 3 * * * /usr/bin/certbot renew --quiet --post-hook 'docker-compose -f $DEPLOY_DIR/docker-compose.yaml restart envoy'") | sudo crontab -
 
 if [ $? -eq 0 ]; then
     echo "Setup Complete!"
