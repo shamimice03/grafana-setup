@@ -57,8 +57,8 @@ if [ ! -f docker-compose.yaml ]; then
     exit 1
 fi
 
-if [ ! -f ./envoy/envoy.yaml.template ]; then
-    echo "Error: envoy.yaml.template not found in $DEPLOY_DIR/envoy/"
+if [ ! -f ./envoy/envoy.yaml ]; then
+    echo "Error: envoy.yaml not found in $DEPLOY_DIR/envoy/"
     exit 1
 fi
 
