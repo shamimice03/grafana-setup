@@ -3,9 +3,9 @@
 set -e
 
 # Configuration
-export DOMAIN="grafana-oss.stg.cloudterms.net"
-export EMAIL="mrseeker420@gmail.com"
-export DEPLOY_DIR="/var/lib/grafana-proxy"
+DOMAIN="grafana-oss.stg.cloudterms.net"
+EMAIL="mrseeker420@gmail.com"
+DEPLOY_DIR="/var/lib/grafana-proxy"
 
 # Install docker and compose
 sudo dnf install -y docker
