@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  # Your Grafana service
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: unless-stopped
+    # NOTE: We don't expose ports here. Envoy will handle all external traffic.
+    # If you want to test Grafana directly, you can temporarily add:
+    # ports:
+    #   - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=Admin@123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - /opt/grafana/data:/var/lib/grafana
+    networks:
+      - proxy-network
+
+  # The Envoy reverse proxy
+  envoy:
+    image: envoyproxy/envoy:v1.28-latest
+    container_name: my_envoy
+    ports:
+      - "80:80"
+    volumes:
+      - ./envoy/envoy.yaml:/etc/envoy/envoy.yaml:ro
+    depends_on:
+      - grafana
+    networks:
+      - proxy-network
+
+networks:
+  proxy-network:
+    driver: bridge
