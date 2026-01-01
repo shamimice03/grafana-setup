@@ -87,7 +87,7 @@ For automated EC2 deployment, use this as user data:
 #!/bin/bash
 set -e
 
-DOMAIN="grafana-oss.stg.cloudterms.net"
+DOMAIN="your_domain"
 EMAIL="your@email.com"
 GRAFANA_ADMIN_PASSWORD="YourSecurePassword"
 
