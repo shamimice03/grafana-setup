@@ -12,9 +12,6 @@ admin:
 static_resources:
   listeners:
     # --- Listener for HTTP (Port 80) ---
-    # This listener handles two tasks:
-    # 1. Serving the Let's Encrypt challenge file.
-    # 2. Redirecting all other traffic to HTTPS.
     - name: listener_80
       address:
         socket_address:
@@ -33,25 +30,23 @@ static_resources:
                       domains: ["*"]
                       routes:
                         # Route for Let's Encrypt ACME challenge
-                        # This now uses direct_response to serve the file from the mounted volume.
                         - match:
                             path: "/.well-known/acme-challenge/*"
                           direct_response:
                             status: 200
                             body:
-                              inline_string: "Not Found" # This is a placeholder. The volume mount serves the actual file.
+                              inline_string: "Not Found" # The volume mount serves the actual file.
                         # Redirect all other HTTP traffic to HTTPS
                         - match:
                             prefix: "/"
                           redirect:
-                            https_redirect: true # This is the correct, modern way
+                            https_redirect: true # FIXED: Removed deprecated options
                 http_filters:
                   - name: envoy.filters.http.router
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 
     # --- Listener for HTTPS (Port 443) ---
-    # This listener terminates TLS and forwards traffic to Grafana.
     - name: listener_443
       address:
         socket_address:
@@ -67,7 +62,7 @@ static_resources:
                   name: local_route
                   virtual_hosts:
                     - name: grafana_vhost
-                      domains: ["grafana.stg.cloudterms.net"] # IMPORTANT: Put your domain here
+                      domains: ["grafana.stg.cloudterms.net"]
                       routes:
                         - match:
                             prefix: "/"
@@ -103,6 +98,3 @@ static_resources:
                     socket_address:
                       address: grafana
                       port_value: 3000
-
-    # The certbot_cluster has been removed as it's no longer needed.
-    # The ACME challenge is now handled by a direct_response.

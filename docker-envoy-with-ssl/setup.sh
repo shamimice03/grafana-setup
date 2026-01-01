@@ -33,11 +33,5 @@ if [ ! -f ./envoy/envoy.yaml ]; then
     echo "Error: envoy.yaml not found in /var/lib/grafana-proxy/envoy/"
     exit 1
 fi
- 
-docker-compose run --rm --service-ports certbot \
-  certonly --webroot \
-  --webroot-path=/var/www/certbot \
-  --email mrseeker420@gmail.com \
-  --agree-tos \
-  --no-eff-email \
-  -d grafana.stg.cloudterms.net
+
+docker-compose up -d
