@@ -64,7 +64,7 @@ fi
 
 # Generate envoy.yaml
 echo "Configuring Envoy for domain: $DOMAIN"
-cat ./envoy/envoy.yaml | sed "s|\${DOMAIN}|$DOMAIN|g" > ./envoy/envoy.yaml
+sudo cat ./envoy/envoy.yaml | sed "s|\${DOMAIN}|$DOMAIN|g" > ./envoy/envoy.yaml
 
 # Fix certificate permissions
 echo "Setting certificate permissions..."
