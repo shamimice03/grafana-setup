@@ -2,10 +2,18 @@
 
 set -e
 
-# Configuration
-DOMAIN="grafana-oss.stg.cloudterms.net"
-EMAIL="mrseeker420@gmail.com"
+# Check if arguments are provided
+if [ "$#" -lt 2 ]; then
+    echo "Usage: $0 <DOMAIN> <EMAIL> [ADMIN_PASSWORD]"
+    echo "Example: $0 example.com user@example.com YourSecurePassword123"
+    exit 1
+fi
+
+DOMAIN="$1"
+EMAIL="$2"
+ADMIN_PASSWORD="${3:-Admin@123}"  # Default if not provided
 DEPLOY_DIR="/var/lib/grafana-proxy"
+
 
 # Install docker and compose
 sudo dnf install -y docker
@@ -49,7 +57,7 @@ echo "Copying files to $DEPLOY_DIR..."
 sudo cp -r . $DEPLOY_DIR/
 
 # Navigate to deployment directory
-cd $DEPLOY_DIR
+sudo cd $DEPLOY_DIR
 
 # Verify required files exist
 if [ ! -f docker-compose.yaml ]; then
@@ -82,7 +90,7 @@ sudo chmod 644 /etc/letsencrypt/archive/$DOMAIN/cert1.pem
 
 # Start services
 echo "Starting Docker containers..."
-sudo docker-compose up -d
+sudo ADMIN_PASSWORD="$ADMIN_PASSWORD" docker-compose up -d
 
 if [ $? -eq 0 ]; then
     echo "Setup Complete!"

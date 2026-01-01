@@ -3,14 +3,6 @@
 # - Port 80: Redirects all traffic to HTTPS
 # - Port 443: Terminates TLS and forwards to Grafana
 # ===================================================================
-
-# admin:
-#   access_log_path: /tmp/admin_access.log
-#   address:
-#     socket_address:
-#       address: 127.0.0.1
-#       port_value: 9901
-
 static_resources:
   listeners:
     # --- HTTP Listener (Port 80) - Redirect to HTTPS ---
