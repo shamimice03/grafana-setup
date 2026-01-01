@@ -3,9 +3,9 @@
 set -e
 
 # Configuration
-DOMAIN="grafana-oss.stg.cloudterms.net"
-EMAIL="mrseeker420@gmail.com"
-DEPLOY_DIR="/var/lib/grafana-proxy"
+export DOMAIN="grafana-oss.stg.cloudterms.net"
+export EMAIL="mrseeker420@gmail.com"
+export DEPLOY_DIR="/var/lib/grafana-proxy"
 
 # Install docker and compose
 sudo dnf install -y docker
@@ -57,14 +57,14 @@ if [ ! -f docker-compose.yaml ]; then
     exit 1
 fi
 
-if [ ! -f ./envoy/envoy.yaml ]; then
-    echo "Error: envoy.yaml not found in $DEPLOY_DIR/envoy/"
+if [ ! -f ./envoy/envoy.yaml.template ]; then
+    echo "Error: envoy.yaml.template not found in $DEPLOY_DIR/envoy/"
     exit 1
 fi
 
-# Substitute environment variables in envoy.yaml
+# Generate envoy.yaml from template
 echo "Configuring Envoy for domain: $DOMAIN"
-sudo sed -i "s|\${DOMAIN}|$DOMAIN|g" ./envoy/envoy.yaml
+cat ./envoy/envoy.yaml | sed "s|\${DOMAIN}|$DOMAIN|g" > ./envoy/envoy.yaml
 
 # Fix certificate permissions
 echo "Setting certificate permissions..."
