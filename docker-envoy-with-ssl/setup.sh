@@ -2,6 +2,7 @@
 
 set -e
 
+set -a
 # Configuration
 export DOMAIN="grafana-oss.stg.cloudterms.net"
 export EMAIL="mrseeker420@gmail.com"
