@@ -68,10 +68,17 @@ sudo sed -i "s|\$DOMAIN_NAME|$DOMAIN|g" ./envoy/envoy.yaml
 
 # Fix certificate permissions
 echo "Setting certificate permissions..."
-sudo chmod 644 /etc/letsencrypt/archive/$DOMAIN/privkey1.pem
-sudo chmod 644 /etc/letsencrypt/archive/$DOMAIN/fullchain1.pem
+# Set permissions on parent directories
+sudo chmod 755 /etc/letsencrypt
+sudo chmod 755 /etc/letsencrypt/archive
+sudo chmod 755 /etc/letsencrypt/live
 sudo chmod 755 /etc/letsencrypt/archive/$DOMAIN
 sudo chmod 755 /etc/letsencrypt/live/$DOMAIN
+# Set permissions on certificate files
+sudo chmod 644 /etc/letsencrypt/archive/$DOMAIN/privkey1.pem
+sudo chmod 644 /etc/letsencrypt/archive/$DOMAIN/fullchain1.pem
+sudo chmod 644 /etc/letsencrypt/archive/$DOMAIN/chain1.pem
+sudo chmod 644 /etc/letsencrypt/archive/$DOMAIN/cert1.pem
 
 # Start services
 echo "Starting Docker containers..."
