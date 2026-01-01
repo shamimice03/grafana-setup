@@ -1,0 +1,117 @@
+# ===================================================================
+# Envoy Configuration with SSL/TLS
+# ===================================================================
+
+admin:
+  access_log_path: /tmp/admin_access.log
+  address:
+    socket_address:
+      address: 127.0.0.1
+      port_value: 9901
+
+static_resources:
+  listeners:
+    # --- Listener for HTTP (Port 80) ---
+    # This listener handles two tasks:
+    # 1. Serving the Let's Encrypt challenge file.
+    # 2. Redirecting all other traffic to HTTPS.
+    - name: listener_80
+      address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 80
+      filter_chains:
+        - filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: ingress_http
+                route_config:
+                  name: local_route
+                  virtual_hosts:
+                    - name: local_service
+                      domains: ["*"]
+                      routes:
+                        # Route for Let's Encrypt ACME challenge
+                        - match:
+                            path: "/.well-known/acme-challenge/*"
+                          route:
+                            cluster: certbot_cluster
+                        # Redirect all other HTTP traffic to HTTPS
+                        - match:
+                            prefix: "/"
+                          redirect:
+                            https_redirect: true
+                            strip_query: true
+                            response_code: 301
+                http_filters:
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+
+    # --- Listener for HTTPS (Port 443) ---
+    # This listener terminates TLS and forwards traffic to Grafana.
+    - name: listener_443
+      address:
+        socket_address:
+          address: 0.0.0.0
+          port_value: 443
+      filter_chains:
+        - filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: ingress_https
+                route_config:
+                  name: local_route
+                  virtual_hosts:
+                    - name: grafana_vhost
+                      domains: ["grafana.stg.cloudterms.net"] # IMPORTANT: Put your domain here
+                      routes:
+                        - match:
+                            prefix: "/"
+                          route:
+                            cluster: grafana_service
+                http_filters:
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          # TLS Configuration
+          transport_socket:
+            name: envoy.transport_sockets.tls
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+              common_tls_context:
+                alpn_protocols: "h2,http/1.1"
+                tls_certificates:
+                  - certificate_chain:
+                      filename: "/etc/letsencrypt/live/grafana.stg.cloudterms.net/fullchain.pem"
+                    private_key:
+                      filename: "/etc/letsencrypt/live/grafana.stg.cloudterms.net/privkey.pem"
+
+  clusters:
+    # Cluster for the main Grafana service
+    - name: grafana_service
+      type: STRICT_DNS
+      load_assignment:
+        cluster_name: grafana_service
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: grafana
+                      port_value: 3000
+
+    # Cluster for the Certbot challenge
+    - name: certbot_cluster
+      type: STRICT_DNS
+      load_assignment:
+        cluster_name: certbot_cluster
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: 127.0.0.1 # This is a placeholder, the volume mount does the work
+                      port_value: 8080

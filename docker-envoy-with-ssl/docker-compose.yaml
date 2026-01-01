@@ -1,0 +1,43 @@
+version: "3.8"
+
+services:
+  # Your Grafana service (no changes here)
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=Admin@123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - /opt/grafana/data:/var/lib/grafana
+    networks:
+      - proxy-network
+
+  # The Envoy reverse proxy (updated)
+  envoy:
+    image: envoyproxy/envoy:v1.28-latest
+    container_name: my_envoy
+    ports:
+      - "80:80"
+      - "443:443" # Add HTTPS port
+    volumes:
+      - ./envoy/envoy.yaml:/etc/envoy/envoy.yaml:ro
+      # Mount the certificate directories
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    depends_on:
+      - grafana
+    networks:
+      - proxy-network
+
+  # The Certbot service for obtaining/renewing certificates
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+
+networks:
+  proxy-network:
+    driver: bridge
