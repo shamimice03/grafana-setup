@@ -64,9 +64,7 @@ fi
 
 # Substitute environment variables in envoy.yaml
 echo "Configuring Envoy for domain: $DOMAIN"
-export DOMAIN
-sudo envsubst < ./envoy/envoy.yaml > ./envoy/envoy.yaml.tmp
-sudo mv ./envoy/envoy.yaml.tmp ./envoy/envoy.yaml
+sudo sed -i "s|\${DOMAIN}|$DOMAIN|g" ./envoy/envoy.yaml
 
 # Fix certificate permissions
 echo "Setting certificate permissions..."
@@ -77,7 +75,7 @@ sudo chmod 755 /etc/letsencrypt/live/$DOMAIN
 
 # Start services
 echo "Starting Docker containers..."
-docker-compose up -d
+sudo docker-compose up -d
 
 if [ $? -eq 0 ]; then
     echo "Setup Complete!"
