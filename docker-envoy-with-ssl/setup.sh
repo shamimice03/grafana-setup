@@ -62,7 +62,7 @@ if [ ! -f ./envoy/envoy.yaml ]; then
     exit 1
 fi
 
-# Generate envoy.yaml from template
+# Generate envoy.yaml
 echo "Configuring Envoy for domain: $DOMAIN"
 cat ./envoy/envoy.yaml | sed "s|\${DOMAIN}|$DOMAIN|g" > ./envoy/envoy.yaml
 
