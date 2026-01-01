@@ -24,7 +24,6 @@ services:
       # --- UPDATED VOLUMES ---
       # Mount the standard host directories for Let's Encrypt
       - /etc/letsencrypt:/etc/letsencrypt:ro
-      - /var/www/certbot:/var/www/certbot:ro
     depends_on:
       - grafana
     networks:

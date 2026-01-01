@@ -2,6 +2,15 @@
 
 set -e
 
+DOMAIN="grafana.stg.cloudterms.net"
+
+# Install Certbot for SSL certificate management
+sudo dnf install -y certbot
+
+# Requesting certificates from Let's Encrypt
+sudo certbot certonly --webroot \
+  -w /var/www/certbot \
+  -d grafana.stg.cloudterms.net
 
 # Create the directory with sudo
 sudo mkdir -p /opt/grafana/data
@@ -14,10 +23,6 @@ sudo mkdir -p /var/lib/grafana-proxy/
 
 # Copy everything from the current directory to the new location
 sudo cp -r . /var/lib/grafana-proxy/
-
-# Create necessary subdirectories for Certbot
-sudo mkdir -p /var/lib/grafana-proxy/certbot/conf # Will store the actual certificate files.
-sudo mkdir -p /var/lib/grafana-proxy/certbot/www # Will be used for the Let's Encrypt HTTP challenge.
 
 # Move to the grafana-proxy directory
 cd /var/lib/grafana-proxy/
